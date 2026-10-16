@@ -46,19 +46,19 @@ layers:
   - V
   - B
   - '&mkp LCLK'
-  - B
-  - N
+  - A
   - M
   - {t: ',', s: <}
   - {t: ., s: '>'}
+  - {t: /, s: '?'}
   - {t: '$$mdi:keyboard-return$$', type: enter}
   - $$mdi:apple-keyboard-control$$
   - LGUI
   - $$mdi:apple-keyboard-option$$
-  - '2'
+  - {t: '1', s: '!'}
   - $$mdi:keyboard-space$$
   - $$mdi:keyboard-space$$
-  - '3'
+  - {t: '2', s: '@'}
   - $$mdi:backspace-reverse$$
   - {t: '-', s: _}
   - {t: '=', s: +}
@@ -179,7 +179,7 @@ layers:
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
-  - {type: held}
+  - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
@@ -244,7 +244,7 @@ layers:
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
-  - {type: held}
+  - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
