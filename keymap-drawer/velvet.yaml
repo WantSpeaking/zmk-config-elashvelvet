@@ -46,7 +46,7 @@ layers:
   - V
   - B
   - '&mkp LCLK'
-  - A
+  - N
   - M
   - {t: ',', s: <}
   - {t: ., s: '>'}
@@ -55,10 +55,10 @@ layers:
   - $$mdi:apple-keyboard-control$$
   - LGUI
   - $$mdi:apple-keyboard-option$$
-  - {t: '1', s: '!'}
+  - '1'
   - $$mdi:keyboard-space$$
   - $$mdi:keyboard-space$$
-  - {t: '2', s: '@'}
+  - '2'
   - $$mdi:backspace-reverse$$
   - {t: '-', s: _}
   - {t: '=', s: +}
@@ -117,7 +117,7 @@ layers:
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
-  - {t: ▽, type: trans}
+  - {type: held}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
@@ -182,7 +182,7 @@ layers:
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
-  - {t: ▽, type: trans}
+  - {type: held}
   - {t: ▽, type: trans}
   - $$mdi:bluetooth-off$$
   - BT CLR ALL
