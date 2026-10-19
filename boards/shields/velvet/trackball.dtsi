@@ -112,6 +112,14 @@
             processor-name = "speed";
             scale-multiplier = <1>;
             scale-divisor = <4>;
+            /* 故意写成越界值（超出 [-360,360]）：behavior_input_processor_temp_config.c
+             * 里只有 rotation_degrees 在 [-360,360] 内才会执行 set_rotation()，
+             * 而这个判断 0 也满足 —— 不写这行的话，每次按下都会把 speed 的
+             * rotation 临时清成 0，松手再恢复。只要 rotation 非 0，runtime
+             * processor 的旋转实现就会把单独到达的那个轴吞成 0（详见
+             * input_processor_runtime.c 中 `event->value = 0` 分支），
+             * 表现就是按下时方向正常、一松手就乱。越界后不再触碰 rotation。 */
+            rotation-degrees = <1000>;
             #binding-cells = <0>;
         };
 
@@ -121,6 +129,8 @@
             processor-name = "speed";
             scale-multiplier = <2>;
             scale-divisor = <1>;
+            /* 同上，避免覆盖 rotation */
+            rotation-degrees = <1000>;
             #binding-cells = <0>;
         };
 
