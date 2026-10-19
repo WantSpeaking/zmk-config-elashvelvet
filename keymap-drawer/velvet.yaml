@@ -56,7 +56,7 @@ layers:
   - LGUI
   - $$mdi:apple-keyboard-option$$
   - '1'
-  - $$mdi:keyboard-space$$
+  - {t: '$$mdi:keyboard-space$$', h: '7'}
   - $$mdi:keyboard-space$$
   - '2'
   - $$mdi:backspace-reverse$$
@@ -490,7 +490,7 @@ layers:
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
-  - {t: ▽, type: trans}
+  - {type: held}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
