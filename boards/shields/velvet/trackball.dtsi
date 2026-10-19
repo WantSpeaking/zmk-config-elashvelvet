@@ -43,18 +43,62 @@
     };
 };
 
+/*
+ * 轨迹球的输入处理器链，完全由「当前激活层」决定，不使用任何 behavior。
+ *
+ *   基准链（层 0，或未命中下面任何层） →  <&mouse_runtime_input_processor>
+ *   层 5                              →  xy_to_scroll + scroll runtime processor
+ *   层 7                              →  <&trackball_speed &mouse_runtime_input_processor>
+ *
+ * 语义（ZMK input_listener 的 layer_overrides）：子节点按书写顺序匹配，
+ * 第一个命中的层会让它的 input-processors **整体替换**父级链
+ * （没写 process-next）；所有子节点都没命中时才走父级链。
+ *
+ * 所以「切到层 7 就变慢」= 进入层 7 即可。当前配置在 config/velvet.keymap 里
+ * 把左拇指空格改成了 &ltq 7 SPACE（按住进层 7，轻按是空格）。
+ * 层 7 的倍率由 trackball_speed 的 scale 决定，默认 1/4，
+ * 刷完后可在 DYA Studio 的输入处理器页里改 "speed" 那一项。
+ *
+ * 注意：trackball_speed 的 rotation 必须保持 0。runtime processor 在
+ * rotation != 0 时要求 X/Y 严格成对到达，单轴输入会被吞成 0
+ * （input_processor_runtime.c 里的 `event->value = 0` 分支），表现为丢轴、
+ * 方向错乱。方向校准请用驱动层的
+ * CONFIG_PMW3610_SWAP_XY / CONFIG_PMW3610_INVERT_X / _INVERT_Y。
+ */
 / {
+    trackball_speed: trackball_speed {
+        compatible = "zmk,input-processor-runtime";
+        processor-label = "speed";
+        type = <INPUT_EV_REL>;
+        x-codes = <INPUT_REL_X>;
+        y-codes = <INPUT_REL_Y>;
+        scale-multiplier = <1>;
+        scale-divisor = <4>;
+        rotation-degrees = <0>;
+        track-remainders;
+        #input-processor-cells = <0>;
+    };
+
     trackball_listener {
         status = "okay";
         compatible = "zmk,input-listener";
         device = <&trackball>;
+
+        /* 基准链：只走 mouse processor，速度 = CPI × mouse 的 scale */
         input-processors = <&mouse_runtime_input_processor>;
 
+        /* 层 5：轨迹球转滚动（保持原有行为） */
         scroller {
             layers = <5>;
             input-processors =
                 <&zip_xy_to_scroll_mapper &scroll_runtime_input_processor>,
                 <&zip_scroll_transform INPUT_TRANSFORM_Y_INVERT>;
+        };
+
+        /* 层 7：慢速层。speed(1/4) → mouse，离开这层立刻回到基准速度 */
+        slow {
+            layers = <7>;
+            input-processors = <&trackball_speed &mouse_runtime_input_processor>;
         };
     };
 };
