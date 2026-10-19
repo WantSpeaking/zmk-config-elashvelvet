@@ -46,26 +46,34 @@
 /*
  * 轨迹球的输入处理器链，完全由「当前激活层」决定，不使用任何 behavior。
  *
- *   基准链（层 0，或未命中下面任何层） →  <&mouse_runtime_input_processor>
+ *   基准链（层 0，或未命中下面任何层） →  mouse（scale = 1/4，日常慢速）
  *   层 5                              →  xy_to_scroll + scroll runtime processor
- *   层 7                              →  <&trackball_speed &mouse_runtime_input_processor>
+ *   层 7                              →  speed（scale = 1/1，全速）
  *
  * 语义（ZMK input_listener 的 layer_overrides）：子节点按书写顺序匹配，
  * 第一个命中的层会让它的 input-processors **整体替换**父级链
  * （没写 process-next）；所有子节点都没命中时才走父级链。
  *
- * 所以「切到层 7 就变慢」= 进入层 7 即可。当前配置在 config/velvet.keymap 里
- * 把左拇指空格改成了 &ltq 7 SPACE（按住进层 7，轻按是空格）。
- * 层 7 的倍率由 trackball_speed 的 scale 决定，默认 1/4，
- * 刷完后可在 DYA Studio 的输入处理器页里改 "speed" 那一项。
+ * 两条鼠标链互不共享处理器，各自独立：
+ *   - mouse 只服务基准层 → 改它不影响层 7
+ *   - speed 只服务层 7   → 改它不影响基准层
+ * 所以速度是「各自的绝对值」，不再相乘：
+ *   基准 = CPI × 1/4，层 7 = CPI × 1/1。
  *
- * 注意：trackball_speed 的 rotation 必须保持 0。runtime processor 在
- * rotation != 0 时要求 X/Y 严格成对到达，单轴输入会被吞成 0
- * （input_processor_runtime.c 里的 `event->value = 0` 分支），表现为丢轴、
- * 方向错乱。方向校准请用驱动层的
- * CONFIG_PMW3610_SWAP_XY / CONFIG_PMW3610_INVERT_X / _INVERT_Y。
+ * 进层 7 的方式：config/velvet.keymap 里左拇指空格是 &ltq 7 SPACE
+ * （按住 = &mo 7，轻按 = 空格）。
+ *
+ * ⚠ DT 里写的只是**默认值**，NVS 里已存在的值优先级更高。首次刷入后若
+ * 表现与预期相反（默认快、按住反而慢），到 DYA Studio → 输入处理器 把
+ * mouse 改成 1/4、speed 改成 1/1 即可，不需要重新编译。
+ *
+ * 方向校准不要用 runtime processor 的 rotation：它在 rotation != 0 时要求
+ * X/Y 严格成对到达，单轴输入会被吞成 0（input_processor_runtime.c 里的
+ * `event->value = 0` 分支），表现为丢轴、方向错乱。请用驱动层
+ * CONFIG_PMW3610_SWAP_XY / _INVERT_X / _INVERT_Y。
  */
 / {
+    /* 层 7 专用：全速（1/1）。与 mouse 完全独立，互不影响 */
     trackball_speed: trackball_speed {
         compatible = "zmk,input-processor-runtime";
         processor-label = "speed";
@@ -73,7 +81,7 @@
         x-codes = <INPUT_REL_X>;
         y-codes = <INPUT_REL_Y>;
         scale-multiplier = <1>;
-        scale-divisor = <4>;
+        scale-divisor = <1>;
         rotation-degrees = <0>;
         track-remainders;
         #input-processor-cells = <0>;
@@ -84,7 +92,7 @@
         compatible = "zmk,input-listener";
         device = <&trackball>;
 
-        /* 基准链：只走 mouse processor，速度 = CPI × mouse 的 scale */
+        /* 基准链：慢速日常，mouse 的 scale 见文件末尾的默认值覆盖 */
         input-processors = <&mouse_runtime_input_processor>;
 
         /* 层 5：轨迹球转滚动（保持原有行为） */
@@ -95,10 +103,20 @@
                 <&zip_scroll_transform INPUT_TRANSFORM_Y_INVERT>;
         };
 
-        /* 层 7：慢速层。speed(1/4) → mouse，离开这层立刻回到基准速度 */
-        slow {
+        /* 层 7：全速。链里没有 mouse，两条链彻底解耦 */
+        fast {
             layers = <7>;
-            input-processors = <&trackball_speed &mouse_runtime_input_processor>;
+            input-processors = <&trackball_speed>;
         };
     };
+};
+
+/*
+ * 把模块预定义的 mouse 处理器默认 scale 改成 1/4（慢速基准）。
+ * 它自带 track-remainders，缩小时小位移会累积，不会出现「推了不动」。
+ * 仍然受 NVS 覆盖：Studio 里改过的值优先，改这段只影响 NVS 为空时。
+ */
+&mouse_runtime_input_processor {
+    scale-multiplier = <1>;
+    scale-divisor = <4>;
 };
