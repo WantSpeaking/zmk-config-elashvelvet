@@ -43,12 +43,41 @@
     };
 };
 
+/*
+ * 独立的「速度乘数」输入处理器。
+ *
+ * 与内置的 mouse_runtime_input_processor 串成两级：
+ *     传感器 → speed（只做缩放） → mouse（旋转 / 微调）
+ *
+ * 为什么要单独加一个，而不是直接改 mouse 的 scale：
+ *  - temp-config 行为是**绝对覆盖**：按住变速键期间，mouse 处理器原本的
+ *    scale 和 rotation 会被整体替换掉（松手才恢复）。屏幕旋转补偿（rotation
+ *    90/270）会在这段时间失效，手感突变。
+ *  - 拆出 speed 之后，按住变速键只改 speed 这一级的倍率，mouse 里的旋转和
+ *    微调比例完全不受影响。最终速度 ≈ CPI × speed × mouse-scale。
+ *  - processor-label 必须 ≤ 8 字符（CONFIG_ZMK_RUNTIME_INPUT_PROCESSOR_NAME_MAX_LEN），
+ *    这里用 "speed"。该名字会被 Studio 直接显示，也被下面 temp-config 的
+ *    processor-name 引用。
+ */
 / {
+    trackball_speed: trackball_speed {
+        compatible = "zmk,input-processor-runtime";
+        processor-label = "speed";
+        type = <INPUT_EV_REL>;
+        x-codes = <INPUT_REL_X>;
+        y-codes = <INPUT_REL_Y>;
+        scale-multiplier = <1>;
+        scale-divisor = <1>;
+        rotation-degrees = <0>;
+        track-remainders;
+        #input-processor-cells = <0>;
+    };
+
     trackball_listener {
         status = "okay";
         compatible = "zmk,input-listener";
         device = <&trackball>;
-        input-processors = <&mouse_runtime_input_processor>;
+        input-processors = <&trackball_speed &mouse_runtime_input_processor>;
 
         scroller {
             layers = <5>;
@@ -56,5 +85,53 @@
                 <&zip_xy_to_scroll_mapper &scroll_runtime_input_processor>,
                 <&zip_scroll_transform INPUT_TRANSFORM_Y_INVERT>;
         };
+    };
+};
+
+/*
+ * 轨迹球速度微调键：按住生效，松开自动恢复成 Studio 里保存的持久速度。
+ *
+ * 用法：DYA Studio → 键位页 → 选一个键 → 行为列表里挑
+ *       "Trackball Slow 0.25x" 或 "Trackball Fast 2x"。
+ *       按住 = 临时换速度，松手 = 回到原速度，不需要进菜单。
+ *
+ * 说明：
+ *  - processor-name = "speed"，指向上面新加的 trackball_speed，
+ *    不再动 mouse 处理器，所以按住期间旋转/微调比例不会被覆盖。
+ *  - 这里的倍率是 speed 这一级的**绝对倍率**，但它是叠加在 mouse 之上的，
+ *    所以整体相当于「Studio 里保存的速度 × 倍率」，比之前直接改 mouse 更温和。
+ *  - 定义在 trackball.dtsi 里 → 只有右手（central）编译，左手不受影响。
+ *  - 若还想按住改滚动速度，把下面注释的代码取消注释并改成 "scroll" 即可
+ *    （scroll 处理器只处理 WHEEL 轴，与 speed 不冲突）。
+ */
+/ {
+    behaviors {
+        rip_slow: rip_slow {
+            compatible = "zmk,behavior-input-processor-temp-config";
+            display-name = "Trackball Slow 0.25x";
+            processor-name = "speed";
+            scale-multiplier = <1>;
+            scale-divisor = <4>;
+            #binding-cells = <0>;
+        };
+
+        rip_fast: rip_fast {
+            compatible = "zmk,behavior-input-processor-temp-config";
+            display-name = "Trackball Fast 2x";
+            processor-name = "speed";
+            scale-multiplier = <2>;
+            scale-divisor = <1>;
+            #binding-cells = <0>;
+        };
+
+        // 可选：按住让滚动变快/变慢
+        // rip_scr_fast: rip_scr_fast {
+        //     compatible = "zmk,behavior-input-processor-temp-config";
+        //     display-name = "Scroll Fast 2x";
+        //     processor-name = "scroll";
+        //     scale-multiplier = <2>;
+        //     scale-divisor = <1>;
+        //     #binding-cells = <0>;
+        // };
     };
 };
